@@ -11,7 +11,7 @@ import './drag-file.js'
 import './aside.js'
 import './settings.js'
 import './components/codi-editor/codi-editor.js'
-import './components/layout-preview/layout-preview.js'
+import './components/layout-preview/layout-preview.jsx'
 import { initializeEventsController } from './events-controller.js'
 
 // Esperar a que todos los recursos estén cargados
