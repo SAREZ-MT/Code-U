@@ -1,0 +1,83 @@
+.console {
+  & .console-header {
+    background: var(--aside-bar-background);
+    color: var(--app-foreground);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding-top: 1em;
+  }
+
+  & .console-type {
+    padding-bottom: 8px;
+    opacity: 0.6;
+  }
+
+  & .console-item {
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    padding: 0 0 0 1em;
+  }
+
+  & .console-item strong {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  & .console-list {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: 0.5em;
+
+    & li {
+      display: flex;
+      align-items: start;
+      gap: 1em;
+      padding: 0 0 0.5em 0.5em;
+
+      &:not(:last-child) {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+    }
+
+    & svg {
+      margin: 3px 0px;
+      height: 18px;
+      width: 18px;
+      flex-shrink: 0;
+    }
+
+    & .error {
+      background: rgb(235, 189, 189);
+      border: 2px solid rgb(204, 0, 0);
+      color: black;
+      padding-top: 0.5em
+    }
+
+    & .error::before {
+      content: '❗';
+      margin-right: 4px;
+      width: 1em;
+    }
+
+    & .log-log {
+      color: var(--log-log)
+    }
+
+    & .log-info {
+      color: var(--log-info)
+    }
+
+    & .log-error {
+      color: var(--log-error)
+    }
+
+    & .log-warn {
+      color: var(--log-warn)
+    }
+  }
+}
