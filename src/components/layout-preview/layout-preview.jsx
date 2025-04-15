@@ -12,5 +12,8 @@ function LayoutPreview ({ active, layout }) {
   )
 }
 
+// Exportamos el componente para que esté disponible globalmente
+window.LayoutPreview = LayoutPreview;
+
 // Register the Preact component as a custom element
 register(LayoutPreview, 'layout-preview', ['active', 'layout'], { shadow: false })

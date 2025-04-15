@@ -8,9 +8,41 @@
   <meta charset="UTF-8" />
   <link rel="icon" type=image/x-icon href="/assets/favicon.ico" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link as="font" rel="preload" crossorigin="anonymous" href="/assets/fonts/CascadiaCodePL.woff2" />
-  <link as="font" rel="preload" crossorigin="anonymous" href="/assets/fonts/CascadiaCodePLItalic.woff2" />
+  <link as="font" type="font/woff2" rel="preload" crossorigin="anonymous" href="/assets/fonts/CascadiaCodePL.woff2" />
+  <link as="font" type="font/woff2" rel="preload" crossorigin="anonymous" href="/assets/fonts/CascadiaCodePLItalic.woff2" />
   <link rel="stylesheet" href="./src/style.css" />
+  <!-- Deshabilitar advertencias de Lit -->
+  <script>
+    // Asegurar que globalThis esté disponible
+    window.globalThis = window.globalThis || window;
+    
+    // Crear un Set real para litIssuedWarnings
+    window.litIssuedWarnings = new Set();
+    globalThis.litIssuedWarnings = window.litIssuedWarnings;
+    
+    // Función de respaldo por si algo sobrescribe litIssuedWarnings
+    window.addEventListener('DOMContentLoaded', function() {
+      // Verificar que litIssuedWarnings siga siendo un Set
+      if (!(globalThis.litIssuedWarnings instanceof Set) || 
+          typeof globalThis.litIssuedWarnings.has !== 'function' ||
+          typeof globalThis.litIssuedWarnings.add !== 'function') {
+        console.log('Restaurando litIssuedWarnings como Set');
+        window.litIssuedWarnings = new Set();
+        globalThis.litIssuedWarnings = window.litIssuedWarnings;
+      }
+    });
+    
+    // Crear un objeto React básico para evitar errores si Preact está usando sintaxis JSX
+    if (typeof window.React === 'undefined') {
+      window.React = {
+        createElement: function() { 
+          // Esta función será reemplazada por Preact
+          return arguments; 
+        },
+        Fragment: {}
+      };
+    }
+  </script>
   <script>
     ; (function () {
       try {
@@ -37,175 +69,182 @@
 </head>
 
 <body>
-  <div class="overlay-drag hidden">
-    <div id="drag-file" class="open-file-dragging">
-      <div class="zone-drag-drop">
-        <strong>Drop File to Open</strong>
-        <svg viewBox="0 0 20 20" fill="none">
-          <path
-            d="M16 10.4v.6h-3.5a.5.5 0 0 0-.5.498V11.511l-.004.06a2.57 2.57 0 0 1-.256.955 1.694 1.694 0 0 1-.572.667c-.26.174-.63.307-1.168.307-.538 0-.907-.133-1.168-.307a1.694 1.694 0 0 1-.572-.667A2.572 2.572 0 0 1 8 11.511V11.5A.5.5 0 0 0 7.5 11H4V7a2 2 0 0 1 2-2h2.022a5.48 5.48 0 0 1 .185-1H6a3 3 0 0 0-3 3v8a3 3 0 0 0 3 3h8a3 3 0 0 0 3-3V9.743a5.507 5.507 0 0 1-1 .657Zm-2.5-.4a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Zm-2.354-4.146a.5.5 0 0 1 .708-.708L13 6.293V3.5a.5.5 0 0 1 1 0v2.793l1.146-1.147a.5.5 0 0 1 .708.708l-2 2a.499.499 0 0 1-.351.146h-.006a.498.498 0 0 1-.348-.144l-.003-.003-2-2Z"
-            fill="currentColor" />
-        </svg>
-        <input title="Drop file to open" multiple type="file" id="input-file-drop" accept="text/css, text/javascript, text/html" />
+  <!-- Contenedor para la aplicación Vue -->
+  <div id="vue-app"></div>
+
+  <!-- Editor original (se ocultará/mostrará según la ruta) -->
+  <div id="editor-container" style="display: none;">
+    <div class="overlay-drag hidden">
+      <div id="drag-file" class="open-file-dragging">
+        <div class="zone-drag-drop">
+          <strong>Drop File to Open</strong>
+          <svg viewBox="0 0 20 20" fill="none">
+            <path
+              d="M16 10.4v.6h-3.5a.5.5 0 0 0-.5.498V11.511l-.004.06a2.57 2.57 0 0 1-.256.955 1.694 1.694 0 0 1-.572.667c-.26.174-.63.307-1.168.307-.538 0-.907-.133-1.168-.307a1.694 1.694 0 0 1-.572-.667A2.572 2.572 0 0 1 8 11.511V11.5A.5.5 0 0 0 7.5 11H4V7a2 2 0 0 1 2-2h2.022a5.48 5.48 0 0 1 .185-1H6a3 3 0 0 0-3 3v8a3 3 0 0 0 3 3h8a3 3 0 0 0 3-3V9.743a5.507 5.507 0 0 1-1 .657Zm-2.5-.4a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Zm-2.354-4.146a.5.5 0 0 1 .708-.708L13 6.293V3.5a.5.5 0 0 1 1 0v2.793l1.146-1.147a.5.5 0 0 1 .708.708l-2 2a.499.499 0 0 1-.351.146h-.006a.498.498 0 0 1-.348-.144l-.003-.003-2-2Z"
+              fill="currentColor" />
+          </svg>
+          <input title="Drop file to open" multiple type="file" id="input-file-drop" accept="text/css, text/javascript, text/html" />
+        </div>
       </div>
     </div>
-  </div>
-  <div id="app">
-    <aside>
-      <div class="aside-sections">
-        <header>
-          <button id="editor-aside-button" class="is-active bar-button" aria-label="Close aside bar"
-            data-action="close-aside-bar">
-            <span role="tooltip" class="button-title" data-translate="editor">Editor</span>
+    <div id="app">
+      <aside>
+        <div class="aside-sections">
+          <header>
+            <button id="editor-aside-button" class="is-active bar-button" aria-label="Close aside bar"
+              data-action="close-aside-bar">
+              <span role="tooltip" class="button-title" data-translate="editor">Editor</span>
+              <svg viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M5.503 4.627 5.5 6.75v10.504a3.25 3.25 0 0 0 3.25 3.25h8.616a2.251 2.251 0 0 1-2.122 1.5H8.75A4.75 4.75 0 0 1 4 17.254V6.75c0-.98.627-1.815 1.503-2.123ZM13.128 2c.597 0 1.17.237 1.592.66l4.618 4.62c.422.422.659.995.659 1.591v8.383a2.25 2.25 0 0 1-2.25 2.25H8.752a2.25 2.25 0 0 1-2.25-2.25V4.25A2.25 2.25 0 0 1 8.752 2h4.376ZM13 3.5H8.752a.75.75 0 0 0-.75.75v13.004c0 .414.336.75.75.75h8.995a.75.75 0 0 0 .75-.75V9.003H15.25a2.25 2.25 0 0 1-2.245-2.095L13 6.754V3.5Zm1.5 1.061.001 2.193c0 .38.282.693.648.743l.102.007 2.19-.001-2.94-2.942Z"
+                  fill="currentColor" />
+              </svg>
+            </button>
+          </header>
+
+          <footer>
+            <button class="bar-button" aria-label="Show settings bar" data-action="show-settings-bar">
+              <span role="tooltip" class="button-title" data-translate="settings">Settings</span>
+              <svg viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M12.013 2.25c.734.008 1.465.093 2.182.253a.75.75 0 0 1 .582.649l.17 1.527a1.384 1.384 0 0 0 1.927 1.116l1.4-.615a.75.75 0 0 1 .85.174 9.793 9.793 0 0 1 2.205 3.792.75.75 0 0 1-.272.825l-1.241.916a1.38 1.38 0 0 0 0 2.226l1.243.915a.75.75 0 0 1 .272.826 9.798 9.798 0 0 1-2.204 3.792.75.75 0 0 1-.848.175l-1.407-.617a1.38 1.38 0 0 0-1.926 1.114l-.17 1.526a.75.75 0 0 1-.571.647 9.518 9.518 0 0 1-4.406 0 .75.75 0 0 1-.572-.647l-.169-1.524a1.382 1.382 0 0 0-1.925-1.11l-1.406.616a.75.75 0 0 1-.85-.175 9.798 9.798 0 0 1-2.203-3.796.75.75 0 0 1 .272-.826l1.243-.916a1.38 1.38 0 0 0 0-2.226l-1.243-.914a.75.75 0 0 1-.272-.826A9.793 9.793 0 0 1 4.88 5.355a.75.75 0 0 1 .85-.174l1.4.615a1.387 1.387 0 0 0 1.93-1.118l.17-1.526a.75.75 0 0 1 .583-.65c.717-.159 1.449-.243 2.201-.252Zm0 1.5a9.135 9.135 0 0 0-1.354.117l-.11.977A2.886 2.886 0 0 1 6.527 7.17l-.899-.394A8.293 8.293 0 0 0 4.28 9.092l.798.587a2.881 2.881 0 0 1 .001 4.643l-.799.588c.32.842.776 1.626 1.348 2.322l.905-.397a2.882 2.882 0 0 1 4.017 2.318l.109.984c.89.15 1.798.15 2.688 0l.109-.984a2.88 2.88 0 0 1 4.019-2.322l.904.396a8.299 8.299 0 0 0 1.348-2.318l-.798-.588a2.88 2.88 0 0 1-.001-4.643l.797-.587a8.293 8.293 0 0 0-1.348-2.317l-.897.393a2.884 2.884 0 0 1-4.023-2.324l-.109-.976a8.991 8.991 0 0 0-1.334-.117Zm-.012 4.5a3.75 3.75 0 1 1 0 7.5 3.75 3.75 0 0 1 0-7.5Zm0 1.5a2.25 2.25 0 1 0 0 4.5 2.25 2.25 0 0 0 0-4.5Z"
+                  fill="currentColor" />
+              </svg>
+            </button>
+          </footer>
+        </div>
+
+        <div class="aside-bar" hidden>
+          <form id="settings" hidden class="bar-content settings">
+            <div class="settings-content">
+              <div class="settings-item">
+                <strong>
+                  <span class="settings-type" data-translate="editor">Editor:</span>
+                  <span data-translate="layout">Layout</span>
+                </strong>
+                <div>
+                  <fieldset class="layout-preview-container">
+                    <label for="default-layout-radio">
+                      <input type="radio" name="layout" value="default" />
+                      <layout-preview layout="default"></layout-preview>
+                    </label>
+                    <label for="horizontal-layout-radio">
+                      <input type="radio" name="layout" value="horizontal" />
+                      <layout-preview layout="horizontal"></layout-preview>
+                    </label>
+                    <label for="bottom-layout-radio">
+                      <input type="radio" name="layout" value="bottom" />
+                      <layout-preview layout="bottom"></layout-preview>
+                    </label>
+                  </fieldset>
+                </div>
+              </div>
+
+              <div class="settings-item">
+                <strong>
+                  <span class="settings-type" data-translate="editor">Editor:</span>
+                  <span data-translate="fontSize">Font Size</span>
+                </strong>
+                <input name="fontSize" class="input" autocorrect="off" autocapitalize="off" spellcheck="false"
+                  type="number" wrap="off" value="16" min="1" max="100" step="1" />
+              </div>
+
+              <div class="settings-item">
+                <strong>
+                  <span class="settings-type" data-translate="editor">Editor:</span>
+                  <span data-translate="tabSize">Tab Size</span>
+                </strong>
+                <input name="tabSize" class="input" autocorrect="off" autocapitalize="off" spellcheck="false"
+                  type="number" wrap="off" value="2" min="1" max="100" step="1" />
+              </div>
+
+              <div class="settings-item">
+                <strong>
+                  <span class="settings-type" data-translate="editor">Editor:</span>
+                  <span data-translate="maxExecutionTime">Max. execution time</span>
+                </strong>
+                <input name="maxExecutionTime" class="input" autocorrect="off" autocapitalize="off" spellcheck="false"
+                  type="number" wrap="off" value="200" min="100" max="5000" step="100" />
+                <p class="setting-description" data-translate="maxExecutionTimeDesc">
+                  The maximum execution time in milliseconds to prevent the editor from freezing.
+                </p>
+              </div>
+
+              <div class="settings-item">
+                <strong>
+                  <span class="settings-type" data-translate="workbench">Workbench:</span>
+                  <span data-translate="colorTheme">Color theme</span>
+                </strong>
+                <div class="select">
+                  <select name="theme">
+                    <option data-translate="dark" value="vs-dark">Dark</option>
+                    <option data-translate="light" value="vs">Light</option>
+                    <option data-translate="highContrastDark" value="hc-black">High Contrast Dark</option>
+                    <option data-translate="highContrastLight" value="hc-light">High Contrast Light</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="settings-item">
+                <strong>
+                  <span class="settings-type" data-translate="featuresAutosave">Features › Auto save:</span>
+                  <span data-translate="localStorage">Local storage</span>
+                </strong>
+                <div>
+                  <label class="checkbox">
+                    <input name="saveLocalstorage" type="checkbox" />
+                    <span data-translate="automaticallySaveUrl">Automatically save URL to local storage for fast content
+                      loading</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      </aside>
+
+      <div id="editor" class="grid">
+        <div id="tabs" hidden>
+          <label for="markup">HTML</label>
+          <label for="script">JavaScript</label>
+          <label for="style">CSS</label>
+        </div>
+        <codi-editor data-grid-area="editor-html" id="markup" language="html"></codi-editor>
+        <codi-editor data-grid-area="editor-js" id="script" language="javascript"></codi-editor>
+        <codi-editor data-grid-area="editor-css" id="style" language="css"></codi-editor>
+
+        <div id="editor-preview" class="iframe-container">
+          <iframe title="CodiLink Preview"></iframe>
+        </div>
+
+        <div class="first-gutter"></div>
+        <div class="second-gutter"></div>
+        <div class="last-gutter"></div>
+
+        <div class="scroll-buttons-container">
+          <button class="scroll-button button-up" disabled title="Scroll up">
             <svg viewBox="0 0 24 24" fill="none">
               <path
-                d="M5.503 4.627 5.5 6.75v10.504a3.25 3.25 0 0 0 3.25 3.25h8.616a2.251 2.251 0 0 1-2.122 1.5H8.75A4.75 4.75 0 0 1 4 17.254V6.75c0-.98.627-1.815 1.503-2.123ZM13.128 2c.597 0 1.17.237 1.592.66l4.618 4.62c.422.422.659.995.659 1.591v8.383a2.25 2.25 0 0 1-2.25 2.25H8.752a2.25 2.25 0 0 1-2.25-2.25V4.25A2.25 2.25 0 0 1 8.752 2h4.376ZM13 3.5H8.752a.75.75 0 0 0-.75.75v13.004c0 .414.336.75.75.75h8.995a.75.75 0 0 0 .75-.75V9.003H15.25a2.25 2.25 0 0 1-2.245-2.095L13 6.754V3.5Zm1.5 1.061.001 2.193c0 .38.282.693.648.743l.102.007 2.19-.001-2.94-2.942Z"
+                d="M4.293 15.707a1 1 0 0 0 1.414 0L12 9.414l6.293 6.293a1 1 0 0 0 1.414-1.414l-7-7a1 1 0 0 0-1.414 0l-7 7a1 1 0 0 0 0 1.414Z"
                 fill="currentColor" />
             </svg>
           </button>
-        </header>
-
-        <footer>
-          <button class="bar-button" aria-label="Show settings bar" data-action="show-settings-bar">
-            <span role="tooltip" class="button-title" data-translate="settings">Settings</span>
+          <button class="scroll-button button-down" title="Scroll down">
             <svg viewBox="0 0 24 24" fill="none">
               <path
-                d="M12.013 2.25c.734.008 1.465.093 2.182.253a.75.75 0 0 1 .582.649l.17 1.527a1.384 1.384 0 0 0 1.927 1.116l1.4-.615a.75.75 0 0 1 .85.174 9.793 9.793 0 0 1 2.205 3.792.75.75 0 0 1-.272.825l-1.241.916a1.38 1.38 0 0 0 0 2.226l1.243.915a.75.75 0 0 1 .272.826 9.798 9.798 0 0 1-2.204 3.792.75.75 0 0 1-.848.175l-1.407-.617a1.38 1.38 0 0 0-1.926 1.114l-.17 1.526a.75.75 0 0 1-.571.647 9.518 9.518 0 0 1-4.406 0 .75.75 0 0 1-.572-.647l-.169-1.524a1.382 1.382 0 0 0-1.925-1.11l-1.406.616a.75.75 0 0 1-.85-.175 9.798 9.798 0 0 1-2.203-3.796.75.75 0 0 1 .272-.826l1.243-.916a1.38 1.38 0 0 0 0-2.226l-1.243-.914a.75.75 0 0 1-.272-.826A9.793 9.793 0 0 1 4.88 5.355a.75.75 0 0 1 .85-.174l1.4.615a1.387 1.387 0 0 0 1.93-1.118l.17-1.526a.75.75 0 0 1 .583-.65c.717-.159 1.449-.243 2.201-.252Zm0 1.5a9.135 9.135 0 0 0-1.354.117l-.11.977A2.886 2.886 0 0 1 6.527 7.17l-.899-.394A8.293 8.293 0 0 0 4.28 9.092l.798.587a2.881 2.881 0 0 1 .001 4.643l-.799.588c.32.842.776 1.626 1.348 2.322l.905-.397a2.882 2.882 0 0 1 4.017 2.318l.109.984c.89.15 1.798.15 2.688 0l.109-.984a2.88 2.88 0 0 1 4.019-2.322l.904.396a8.299 8.299 0 0 0 1.348-2.318l-.798-.588a2.88 2.88 0 0 1-.001-4.643l.797-.587a8.293 8.293 0 0 0-1.348-2.317l-.897.393a2.884 2.884 0 0 1-4.023-2.324l-.109-.976a8.991 8.991 0 0 0-1.334-.117Zm-.012 4.5a3.75 3.75 0 1 1 0 7.5 3.75 3.75 0 0 1 0-7.5Zm0 1.5a2.25 2.25 0 1 0 0 4.5 2.25 2.25 0 0 0 0-4.5Z"
+                d="M4.293 8.293a1 1 0 0 1 1.414 0L12 14.586l6.293-6.293a1 1 0 1 1 1.414 1.414l-7 7a1 1 0 0 1-1.414 0l-7-7a1 1 0 0 1 0-1.414Z"
                 fill="currentColor" />
             </svg>
           </button>
-        </footer>
+        </div>
       </div>
 
-      <div class="aside-bar" hidden>
-        <form id="settings" hidden class="bar-content settings">
-          <div class="settings-content">
-            <div class="settings-item">
-              <strong>
-                <span class="settings-type" data-translate="editor">Editor:</span>
-                <span data-translate="layout">Layout</span>
-              </strong>
-              <div>
-                <fieldset class="layout-preview-container">
-                  <label for="default-layout-radio">
-                    <input type="radio" name="layout" value="default" />
-                    <layout-preview layout="default"></layout-preview>
-                  </label>
-                  <label for="horizontal-layout-radio">
-                    <input type="radio" name="layout" value="horizontal" />
-                    <layout-preview layout="horizontal"></layout-preview>
-                  </label>
-                  <label for="bottom-layout-radio">
-                    <input type="radio" name="layout" value="bottom" />
-                    <layout-preview layout="bottom"></layout-preview>
-                  </label>
-                </fieldset>
-              </div>
-            </div>
-
-            <div class="settings-item">
-              <strong>
-                <span class="settings-type" data-translate="editor">Editor:</span>
-                <span data-translate="fontSize">Font Size</span>
-              </strong>
-              <input name="fontSize" class="input" autocorrect="off" autocapitalize="off" spellcheck="false"
-                type="number" wrap="off" value="16" min="1" max="100" step="1" />
-            </div>
-
-            <div class="settings-item">
-              <strong>
-                <span class="settings-type" data-translate="editor">Editor:</span>
-                <span data-translate="tabSize">Tab Size</span>
-              </strong>
-              <input name="tabSize" class="input" autocorrect="off" autocapitalize="off" spellcheck="false"
-                type="number" wrap="off" value="2" min="1" max="100" step="1" />
-            </div>
-
-            <div class="settings-item">
-              <strong>
-                <span class="settings-type" data-translate="editor">Editor:</span>
-                <span data-translate="maxExecutionTime">Max. execution time</span>
-              </strong>
-              <input name="maxExecutionTime" class="input" autocorrect="off" autocapitalize="off" spellcheck="false"
-                type="number" wrap="off" value="200" min="100" max="5000" step="100" />
-              <p class="setting-description" data-translate="maxExecutionTimeDesc">
-                The maximum execution time in milliseconds to prevent the editor from freezing.
-              </p>
-            </div>
-
-            <div class="settings-item">
-              <strong>
-                <span class="settings-type" data-translate="workbench">Workbench:</span>
-                <span data-translate="colorTheme">Color theme</span>
-              </strong>
-              <div class="select">
-                <select name="theme">
-                  <option data-translate="dark" value="vs-dark">Dark</option>
-                  <option data-translate="light" value="vs">Light</option>
-                  <option data-translate="highContrastDark" value="hc-black">High Contrast Dark</option>
-                  <option data-translate="highContrastLight" value="hc-light">High Contrast Light</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="settings-item">
-              <strong>
-                <span class="settings-type" data-translate="featuresAutosave">Features › Auto save:</span>
-                <span data-translate="localStorage">Local storage</span>
-              </strong>
-              <div>
-                <label class="checkbox">
-                  <input name="saveLocalstorage" type="checkbox" />
-                  <span data-translate="automaticallySaveUrl">Automatically save URL to local storage for fast content
-                    loading</span>
-                </label>
-              </div>
-            </div>
-          </div>
-        </form>
-      </div>
-    </aside>
-
-    <div id="editor" class="grid">
-      <div id="tabs" hidden>
-        <label for="markup">HTML</label>
-        <label for="script">JavaScript</label>
-        <label for="style">CSS</label>
-      </div>
-      <codi-editor data-grid-area="editor-html" id="markup" language="html"></codi-editor>
-      <codi-editor data-grid-area="editor-js" id="script" language="javascript"></codi-editor>
-      <codi-editor data-grid-area="editor-css" id="style" language="css"></codi-editor>
-
-      <div id="editor-preview" class="iframe-container">
-        <iframe title="CodiLink Preview"></iframe>
-      </div>
-
-      <div class="first-gutter"></div>
-      <div class="second-gutter"></div>
-      <div class="last-gutter"></div>
-
-      <div class="scroll-buttons-container">
-        <button class="scroll-button button-up" disabled title="Scroll up">
-          <svg viewBox="0 0 24 24" fill="none">
-            <path
-              d="M4.293 15.707a1 1 0 0 0 1.414 0L12 9.414l6.293 6.293a1 1 0 0 0 1.414-1.414l-7-7a1 1 0 0 0-1.414 0l-7 7a1 1 0 0 0 0 1.414Z"
-              fill="currentColor" />
-          </svg>
-        </button>
-        <button class="scroll-button button-down" title="Scroll down">
-          <svg viewBox="0 0 24 24" fill="none">
-            <path
-              d="M4.293 8.293a1 1 0 0 1 1.414 0L12 14.586l6.293-6.293a1 1 0 1 1 1.414 1.414l-7 7a1 1 0 0 1-1.414 0l-7-7a1 1 0 0 1 0-1.414Z"
-              fill="currentColor" />
-          </svg>
-        </button>
-      </div>
+      <div id="notifications"></div>
     </div>
-
-    <div id="notifications"></div>
   </div>
 
-  <script type="module" src="/src/main.js"></script>
+  <!-- Script de Vue -->
+  <script type="module" src="/src/vue-main.js"></script>
 </body>
 
 </html>

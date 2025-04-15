@@ -81,6 +81,9 @@ const createEditor = (domElement) => {
   }
 }
 
+// Exponer la función de inicialización globalmente para permitir reinicializaciones
+window.initializeApp = initializeApp;
+
 function initializeApp() {
   console.log('Inicializando aplicación...');
   
@@ -150,6 +153,86 @@ function initializeApp() {
   const debouncedUpdate = debounce(update, MS_UPDATE_DEBOUNCED_TIME)
   const debouncedUpdateHash = debounce(updateHashedCode, MS_UPDATE_HASH_DEBOUNCED_TIME)
 
+  // Asegurar que el layout se aplica correctamente
+  function reapplyLayout() {
+    const { layout } = getState();
+    console.log('Reaplicando layout:', layout);
+    
+    // Verificar si los controles de layout existen
+    const layoutRadios = document.querySelectorAll('input[name="layout"]');
+    const layoutContainer = document.querySelector('.layout-preview-container');
+    
+    // Si no hay controles o el contenedor está vacío, intentar recrearlos
+    if (layoutRadios.length === 0 || !layoutContainer || layoutContainer.children.length === 0) {
+      console.warn('Controles de layout faltantes o incompletos');
+      
+      // Intentar recrear los controles si existe la función en el componente Vue
+      const vueApp = document.querySelector('#vue-app')?.__vue__;
+      if (vueApp && vueApp.$children) {
+        const editorContainer = vueApp.$children.find(c => c.$options.name === 'EditorContainer');
+        if (editorContainer && typeof editorContainer.recreateLayoutControls === 'function') {
+          console.log('Recreando controles de layout desde Vue...');
+          editorContainer.recreateLayoutControls();
+        }
+      } else {
+        // Si no podemos recrearlos desde Vue, intentar otra solución
+        const settingsBar = document.querySelector('.aside-bar');
+        if (settingsBar && !settingsBar.hasAttribute('hidden')) {
+          // Hacer visible la barra de configuración si está oculta
+          settingsBar.removeAttribute('hidden');
+          const settingsForm = document.querySelector('#settings');
+          if (settingsForm) {
+            settingsForm.removeAttribute('hidden');
+          }
+        }
+      }
+    }
+    
+    // Forzar la aplicación del layout después de un breve retraso
+    setTimeout(() => {
+      setGridLayout(layout);
+      
+      // Actualizar los radio buttons según el layout actual
+      const layoutRadios = document.querySelectorAll('input[name="layout"]');
+      layoutRadios.forEach(radio => {
+        radio.checked = radio.value === layout;
+      });
+      
+      // Asegurar que los divisores están configurados correctamente
+      const gridElement = document.querySelector('.grid');
+      if (gridElement) {
+        // Hacer los divisores visibles y funcionales
+        document.querySelectorAll('.first-gutter, .second-gutter, .last-gutter').forEach(gutter => {
+          gutter.style.display = 'block';
+          gutter.style.visibility = 'visible';
+          gutter.style.zIndex = '10';
+          gutter.style.pointerEvents = 'auto';
+          gutter.style.backgroundColor = 'var(--grid-background, #1e1e1e)';
+        });
+        
+        // Forzar un reflow
+        gridElement.style.display = 'grid';
+      }
+      
+      // Asegurar que la barra de configuración es visible si estamos en modo editor
+      if (document.body.classList.contains('editor-mode')) {
+        const settingsButton = document.querySelector('.settings-button');
+        if (settingsButton) {
+          // Simular clic en el botón de configuración para abrir el panel
+          setTimeout(() => {
+            const settingsBar = document.querySelector('.aside-bar');
+            if (settingsBar && settingsBar.hasAttribute('hidden')) {
+              settingsButton.click();
+            }
+          }, 500);
+        }
+      }
+      
+      // Forzar un redimensionamiento para que Monaco se actualice
+      window.dispatchEvent(new Event('resize'));
+    }, 300);
+  }
+
   // Eventos para la visualización
   function update({ notReload } = {}) {
     try {
@@ -208,7 +291,19 @@ function initializeApp() {
   function updateHashedCode({ html, css, js }) {
     try {
       const hashedCode = `${encode(html)}|${encode(css)}|${encode(js)}`
-      window.history.replaceState(null, null, `/${hashedCode}`)
+      
+      // Solo actualizar la URL si estamos en modo editor (verificación adicional)
+      if (document.body.classList.contains('editor-mode')) {
+        // Usar replaceState en lugar de pushState para no añadir entradas al historial
+        window.history.replaceState(null, null, `/${hashedCode}`)
+        
+        // Notificar al componente Vue que la URL ha cambiado (si existe)
+        if (window.dispatchEvent) {
+          window.dispatchEvent(new CustomEvent('editor-url-updated', { 
+            detail: { path: `/${hashedCode}` } 
+          }));
+        }
+      }
     } catch (e) {
       console.error('Error al actualizar la URL:', e)
     }
@@ -241,4 +336,26 @@ function initializeApp() {
   
   // Comenzar verificación
   checkEditorsReady()
+  
+  // Programar una verificación adicional del layout después de la inicialización
+  setTimeout(() => {
+    reapplyLayout();
+    forceEditorsRefresh();
+  }, 1500);
+  
+  // Función para forzar refresco de editores
+  function forceEditorsRefresh() {
+    Object.values(EDITORS).forEach(editor => {
+      if (editor && editor.editor && editor.editor.layout) {
+        editor.editor.layout();
+      }
+    });
+  }
+  
+  // Devolver una referencia a los editores para permitir manipulación externa
+  return { 
+    editors: EDITORS,
+    update,
+    updateHashedCode
+  }
 }

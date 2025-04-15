@@ -39,6 +39,11 @@ export const setState = (newState) => {
   
   // Guardar en localStorage
   localStorage.setItem('appInitialState', JSON.stringify({ state }))
+  
+  // Forzar un evento de resize para que el editor se actualice
+  setTimeout(() => {
+    window.dispatchEvent(new Event('resize'));
+  }, 10);
 }
 
 export const subscribe = (subscriber) => {
@@ -68,3 +73,7 @@ try {
 } catch (error) {
   console.error('Error loading state:', error)
 }
+
+// Exponer setState globalmente para permitir su uso desde otros contextos
+window.setState = setState;
+window.getState = getState;

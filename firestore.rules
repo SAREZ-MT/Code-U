@@ -1,0 +1,22 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Reglas para la colección de proyectos
+    match /projects/{projectId} {
+      // Permitir lectura si el usuario es el propietario del proyecto
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      
+      // Permitir creación si el usuario está autenticado y establece su ID como propietario
+      allow create: if request.auth != null && 
+                     request.resource.data.userId == request.auth.uid;
+      
+      // Permitir actualización si el usuario es el propietario y no cambia el propietario
+      allow update: if request.auth != null && 
+                     resource.data.userId == request.auth.uid &&
+                     request.resource.data.userId == request.auth.uid;
+      
+      // Permitir eliminación si el usuario es el propietario
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+  }
+} 
