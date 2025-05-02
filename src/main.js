@@ -22,6 +22,41 @@ window.addEventListener('load', async () => {
   if (document.readyState === 'complete' || document.readyState === 'interactive') {
     initializeApp();
   }
+  
+  // Capturar errores de WebSocket para evitar interrupciones
+  window.addEventListener('error', function(event) {
+    // Verificar si el error está relacionado con WebSockets
+    if (event.message && (
+        event.message.includes('WebSocket') || 
+        event.message.includes('ws://') || 
+        event.message.includes('wss://')
+    )) {
+      // Prevenir que el error detenga la ejecución del editor
+      console.warn('WebSocket error interceptado:', event.message);
+      event.preventDefault();
+      
+      // Notificar al usuario solo si estamos en modo desarrollo
+      if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+        const notificationContainer = document.getElementById('notifications');
+        if (notificationContainer) {
+          const notification = document.createElement('div');
+          notification.className = 'notification warning';
+          notification.textContent = 'Error de conexión WebSocket. El HMR no funcionará, pero el editor seguirá operativo.';
+          
+          // Añadir botón de cierre
+          const closeButton = document.createElement('button');
+          closeButton.innerHTML = '&times;';
+          closeButton.addEventListener('click', () => notification.remove());
+          notification.appendChild(closeButton);
+          
+          notificationContainer.appendChild(notification);
+          
+          // Auto-eliminar después de 10 segundos
+          setTimeout(() => notification.remove(), 10000);
+        }
+      }
+    }
+  });
 });
 
 // Obtener el estado actual

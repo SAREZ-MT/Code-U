@@ -25,3 +25,58 @@
     transform: translateY(20px);
   }
 }
+
+/* Animaciones generales */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInFromLeft {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(0); }
+}
+
+@keyframes slideInFromRight {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(0); }
+}
+
+@keyframes slideInFromTop {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(0); }
+}
+
+@keyframes slideInFromBottom {
+  0% { transform: translateY(100%); }
+  100% { transform: translateY(0); }
+}
+
+/* Animación de pulsación para el rayo */
+@keyframes pulse {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+    filter: drop-shadow(0 0 2px rgba(255, 215, 0, 0.6));
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 8px rgba(255, 150, 0, 0.8));
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: drop-shadow(0 0 2px rgba(255, 215, 0, 0.6));
+  }
+}
+
+/* Clase para aplicar la animación al logo */
+.lightning-logo {
+  animation: pulse 2s infinite ease-in-out;
+}
+
+/* Clase para aplicar al elemento img o al contenedor del svg en línea */
+.lightning-icon {
+  animation: pulse 2s infinite ease-in-out;
+}

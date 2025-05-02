@@ -2,8 +2,8 @@
   <div class="dashboard-container allow-scroll">
     <header class="dashboard-header">
       <div class="brand">
-        <img :src="logoUrl" alt="CodeU Logo" class="logo" />
         <h1>CodeU</h1>
+        <img :src="logoUrl" alt="CodeU Logo" class="logo" />
       </div>
       <div class="user-menu">
         <span v-if="user" class="user-name">{{ user.displayName }}</span>

@@ -52,6 +52,9 @@ export default {
     // Añadir la clase editor-layout al body para aplicar el layout del editor
     document.body.classList.add('editor-layout');
 
+    // Establecer manejo de errores de WebSocket
+    this.setupWebSocketErrorHandling();
+
     // Cargar primero el CSS del editor
     this.loadEditorCSS();
 
@@ -174,8 +177,13 @@ export default {
         const link = document.createElement('link');
         link.id = 'editor-styles';
         link.rel = 'stylesheet';
-        link.href = '/src/style.css';
+        
+        // Usar rutas relativas a la raíz para que funcione en producción
+        const isProduction = import.meta.env?.PROD;
+        link.href = isProduction ? '/assets/index-BVpZ1eyq.css' : '/src/style.css';
+        
         document.head.appendChild(link);
+        console.log('Estilos del editor cargados:', link.href);
       }
     },
     loadMainScript() {
@@ -183,7 +191,12 @@ export default {
       const script = document.createElement('script');
       script.id = 'main-editor-script';
       script.type = 'module';
-      script.src = '/src/main.js';
+      
+      // Usar rutas relativas a la raíz que funcionen en producción
+      const isProduction = import.meta.env?.PROD;
+      
+      // En producción, cargar el script compilado desde assets, en desarrollo usar la ruta del código fuente
+      script.src = isProduction ? '/assets/index-CIRy2lpn.js' : '/src/main.js';
       
       script.onload = () => {
         this.scriptLoaded = true;
@@ -195,6 +208,27 @@ export default {
       
       script.onerror = (error) => {
         console.error('Error loading editor script:', error);
+        
+        // Si falla en producción con el nombre de archivo con hash, intentar buscar un patrón alternativo
+        if (isProduction && script.src.includes('index-')) {
+          // Buscar cualquier script que comience con 'index-' en la carpeta assets
+          const fallbackScript = document.createElement('script');
+          fallbackScript.id = 'main-editor-script-fallback';
+          fallbackScript.type = 'module';
+          fallbackScript.src = '/assets/index.js'; // Nombre genérico como respaldo
+          
+          fallbackScript.onload = () => {
+            this.scriptLoaded = true;
+            console.log('Editor script loaded with fallback');
+            this.initializeEditor();
+          };
+          
+          fallbackScript.onerror = (error) => {
+            console.error('Error loading fallback editor script:', error);
+          };
+          
+          document.body.appendChild(fallbackScript);
+        }
       };
       
       document.body.appendChild(script);
@@ -678,6 +712,48 @@ export default {
       
       // Redirigir al dashboard
       this.$router.replace('/dashboard');
+    },
+    // Método para manejar errores de WebSocket
+    setupWebSocketErrorHandling() {
+      // Variable para almacenar errores anteriores y evitar duplicados
+      window._wsErrorsEncountered = window._wsErrorsEncountered || new Set();
+      
+      // Proxy para WebSocket para capturar errores
+      if (!window._originalWebSocket) {
+        window._originalWebSocket = window.WebSocket;
+        
+        window.WebSocket = function(url, protocols) {
+          const ws = new window._originalWebSocket(url, protocols);
+          
+          // Manejar errores en la conexión
+          ws.addEventListener('error', function(event) {
+            const errorKey = url + '-error';
+            
+            // Evitar mostrar el mismo error múltiples veces
+            if (!window._wsErrorsEncountered.has(errorKey)) {
+              window._wsErrorsEncountered.add(errorKey);
+              
+              console.warn('WebSocket connection error:', url);
+              
+              // Si el error es con localhost o HMR, no es crítico para el editor
+              const isHMRSocket = url.includes('localhost') || url.includes('127.0.0.1');
+              
+              if (isHMRSocket) {
+                console.log('HMR WebSocket fallido, pero no afecta la funcionalidad principal del editor');
+              }
+            }
+          });
+          
+          return ws;
+        };
+        
+        // Copiar propiedades y prototipo
+        window.WebSocket.prototype = window._originalWebSocket.prototype;
+        window.WebSocket.CONNECTING = window._originalWebSocket.CONNECTING;
+        window.WebSocket.OPEN = window._originalWebSocket.OPEN;
+        window.WebSocket.CLOSING = window._originalWebSocket.CLOSING;
+        window.WebSocket.CLOSED = window._originalWebSocket.CLOSED;
+      }
     }
   }
 }

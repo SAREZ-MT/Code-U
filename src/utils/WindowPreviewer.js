@@ -8,18 +8,47 @@ export function getPreviewUrl () {
 }
 
 export function updatePreview ({ html, css, js }) {
-  if (previewUrl) {
-    URL.revokeObjectURL(previewUrl)
-  }
+  try {
+    if (previewUrl) {
+      try {
+        URL.revokeObjectURL(previewUrl)
+      } catch (e) {
+        console.warn('Error al revocar URL:', e)
+      }
+    }
 
-  const htmlForPreview = createHtml({ html, css, js }, true)
+    // Asegurarse de que los valores sean strings
+    html = html || '';
+    css = css || '';
+    js = js || '';
 
-  const blob = new window.Blob([htmlForPreview], { type: 'text/html' })
+    const htmlForPreview = createHtml({ html, css, js }, true)
 
-  previewUrl = URL.createObjectURL(blob)
+    // Manejar posibles errores con Blob
+    let blob;
+    try {
+      blob = new window.Blob([htmlForPreview], { type: 'text/html' })
+    } catch (e) {
+      console.error('Error al crear Blob:', e)
+      return;
+    }
 
-  if (previewWindowRef?.deref()) {
-    previewWindowRef.deref().location = previewUrl
+    try {
+      previewUrl = URL.createObjectURL(blob)
+    } catch (e) {
+      console.error('Error al crear ObjectURL:', e)
+      return;
+    }
+
+    if (previewWindowRef?.deref()) {
+      try {
+        previewWindowRef.deref().location = previewUrl
+      } catch (e) {
+        console.warn('Error al actualizar ventana de previsualización:', e)
+      }
+    }
+  } catch (error) {
+    console.error('Error general en updatePreview:', error)
   }
 }
 
